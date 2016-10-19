@@ -5,24 +5,15 @@ var inlinesource = require('gulp-inline-source');
 
 var browserSync = require('browser-sync').create();
 
-var srcPaths = {
-  html: 'src/*.html',
-  js: 'src/js/*.js',
-  sass: 'src/sass/**/*.sass'
-};
-
-var distPaths = {
-  html: 'dist/',
-  js: 'dist/js/',
-  css: 'dist/css/'
-};
+var sassFiles = 'src/sass/**/*';
+var excludes = ['{sass,sass/**}'];
 
 gulp.task('default', ['watch']);
 
 gulp.task('sass', function () {
-  return gulp.src(srcPaths.sass)
+  return gulp.src(sassFiles)
     .pipe(sass().on('error', sass.logError))
-    .pipe(gulp.dest(distPaths.css))
+    .pipe(gulp.dest('dist/css/'))
     .pipe(browserSync.stream());
 });
 
@@ -32,21 +23,23 @@ gulp.task('clean', function(){
 });
 
 gulp.task('inject', function(){
-  return gulp.src(srcPaths.html)
+  return gulp.src('src/**/*.html')
       .pipe(inlinesource())
-      .pipe(gulp.dest(distPaths.html));
+      .pipe(gulp.dest('dest/'));
 });
 
-gulp.task('move', ['move-html', 'move-js']);
+function getMoveArray(){
+  var move = ['src/**/*'];
+  for(var exlude of excludes){
+    move.push('!src/' + exlude);
+  }
 
-gulp.task('move-html', function(){
-  return gulp.src([srcPaths.html])
-    .pipe(gulp.dest(distPaths.html));
-});
+  return move;
+}
 
-gulp.task('move-js', function(){
-  return gulp.src([srcPaths.js])
-    .pipe(gulp.dest(distPaths.js));
+gulp.task('move', function(){
+  return gulp.src(getMoveArray())
+    .pipe(gulp.dest('dist/'));
 });
 
 gulp.task('watch', ['move', 'sass'], function(){
@@ -54,11 +47,10 @@ gulp.task('watch', ['move', 'sass'], function(){
     server: "./dist"
   });
 
-  gulp.watch(srcPaths.sass, ['sass']);
-  gulp.watch(srcPaths.html, ['bsReload']);
-  gulp.watch(srcPaths.js, ['bsReload']);
+  gulp.watch(sassFiles, ['sass']);
+  gulp.watch(getMoveArray(), ['move-and-reload']);
 });
 
-gulp.task('bsReload', ['move'], function(){
+gulp.task('move-and-reload', ['move'], function(){
   browserSync.reload();
 });

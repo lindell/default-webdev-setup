@@ -1,20 +1,38 @@
 var gulp = require('gulp');
 var sass = require('gulp-sass');
 var clean = require('gulp-clean');
+var pug = require('gulp-pug');
 var inlinesource = require('gulp-inline-source');
 
 var browserSync = require('browser-sync').create();
 
 var sassFiles = 'src/sass/**/*';
-var excludes = ['{sass,sass/**}'];
+var pugFiles = 'src/**/*.pug'
+var excludes = ['{sass,sass/**}', '**/*.pug'];
 
 gulp.task('default', ['watch']);
 
-gulp.task('sass', function () {
+function sassTask() {
   return gulp.src(sassFiles)
     .pipe(sass().on('error', sass.logError))
-    .pipe(gulp.dest('dist/css/'))
+    .pipe(gulp.dest('dist/css/'));
+}
+
+gulp.task('sass', sassTask);
+
+gulp.task('sass-and-reload', function(){
+  return sassTask()
     .pipe(browserSync.stream());
+});
+
+gulp.task('pug', function(){
+  return gulp.src(pugFiles)
+    .pipe(pug())
+    .pipe(gulp.dest('dist/'));
+});
+
+gulp.task('pug-and-reload', ['pug'], function(){
+  browserSync.reload();
 });
 
 gulp.task('clean', function(){
@@ -42,13 +60,14 @@ gulp.task('move', function(){
     .pipe(gulp.dest('dist/'));
 });
 
-gulp.task('watch', ['move', 'sass'], function(){
+gulp.task('watch', ['move', 'sass', 'pug'], function(){
   browserSync.init({
     server: "./dist"
   });
 
-  gulp.watch(sassFiles, ['sass']);
+  gulp.watch(sassFiles, ['sass-and-reload']);
   gulp.watch(getMoveArray(), ['move-and-reload']);
+  gulp.watch(pugFiles, ['pug-and-reload']);
 });
 
 gulp.task('move-and-reload', ['move'], function(){
